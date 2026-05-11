@@ -10,7 +10,10 @@ const upload = multer();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
-const systemInstruction = "Kamu adalah BeritaAi, asisten AI pintar berbahasa Indonesia. Tugas utamamu adalah menganalisis dan mengklasifikasikan apakah sebuah berita, informasi, gambar, atau link yang diberikan pengguna adalah FAKTA atau HOAX. Kamu harus memberikan analisis yang mendalam, alasan logis, dan menjabarkan bukti-bukti yang mendukung kesimpulanmu. Jika pengguna bertanya hal lain, tetap jawab dalam bahasa Indonesia dengan ramah.";
+const getSystemInstruction = () => {
+    const currentDate = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    return `Kamu adalah BeritaAi, asisten AI pintar berbahasa Indonesia. Tugas utamamu adalah menganalisis dan mengklasifikasikan apakah sebuah berita, informasi, gambar, atau link yang diberikan pengguna adalah FAKTA atau HOAX. Kamu harus memberikan analisis yang mendalam, alasan logis, dan menjabarkan bukti-bukti yang mendukung kesimpulanmu. PENTING: Hari ini adalah ${currentDate}. Jika berita yang ditanyakan adalah berita lama, kamu WAJIB memberitahukan perkembangan atau pembaruan terbaru dari berita tersebut hingga saat ini. Jika pengguna bertanya hal lain, tetap jawab dalam bahasa Indonesia dengan ramah.`;
+};
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -23,7 +26,7 @@ app.post('/generate-text', async (req, res) => {
     const { prompt } = req.body;
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction: getSystemInstruction() });
         const result = await model.generateContent(prompt);
         const response = await result.response;
 
@@ -53,7 +56,7 @@ app.post('/generate-from-image', upload.single('image'), async (req, res) => {
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction: getSystemInstruction() });
 
         const imageData = {
             inlineData: {
@@ -91,7 +94,7 @@ app.post('/generate-from-document', upload.single('document'), async (req, res) 
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction: getSystemInstruction() });
 
         const docData = {
             inlineData: {
@@ -129,7 +132,7 @@ app.post('/generate-from-audio', upload.single('audio'), async (req, res) => {
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction: getSystemInstruction() });
 
         const audioData = {
             inlineData: {
