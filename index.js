@@ -1,18 +1,19 @@
 import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const app = express();
 const upload = multer();
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY
-});
-
+// Menggunakan SDK yang lebih stabil
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
+const systemInstruction = "Kamu adalah BeritaAi, asisten AI pintar berbahasa Indonesia. Tugas utamamu adalah menganalisis dan mengklasifikasikan apakah sebuah berita, informasi, gambar, atau link yang diberikan pengguna adalah FAKTA atau HOAX. Kamu harus memberikan analisis yang mendalam, alasan logis, dan menjabarkan bukti-bukti yang mendukung kesimpulanmu. Jika pengguna bertanya hal lain, tetap jawab dalam bahasa Indonesia dengan ramah.";
+
 app.use(express.json());
+app.use(express.static('public'));
 
 /* =========================
    ENDPOINT TEXT
@@ -22,18 +23,16 @@ app.post('/generate-text', async (req, res) => {
     const { prompt } = req.body;
 
     try {
-        const response = await ai.models.generateContent({
-            model: GEMINI_MODEL,
-            contents: prompt
-        });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
 
         res.status(200).json({
-            result: response.text
+            result: response.text()
         });
 
     } catch (e) {
-        console.log(e);
-
+        console.error(e);
         res.status(500).json({
             message: e.message
         });
@@ -54,30 +53,24 @@ app.post('/generate-from-image', upload.single('image'), async (req, res) => {
     }
 
     try {
-        const base64Image = req.file.buffer.toString('base64');
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
 
-        const response = await ai.models.generateContent({
-            model: GEMINI_MODEL,
-            contents: [
-                {
-                    text: prompt ?? 'Jelaskan isi gambar berikut.'
-                },
-                {
-                    inlineData: {
-                        data: base64Image,
-                        mimeType: req.file.mimetype
-                    }
-                }
-            ]
-        });
+        const imageData = {
+            inlineData: {
+                data: req.file.buffer.toString('base64'),
+                mimeType: req.file.mimetype
+            }
+        };
+
+        const result = await model.generateContent([prompt ?? 'Jelaskan isi gambar berikut.', imageData]);
+        const response = await result.response;
 
         res.status(200).json({
-            result: response.text
+            result: response.text()
         });
 
     } catch (e) {
-        console.log(e);
-
+        console.error(e);
         res.status(500).json({
             message: e.message
         });
@@ -98,30 +91,24 @@ app.post('/generate-from-document', upload.single('document'), async (req, res) 
     }
 
     try {
-        const base64Document = req.file.buffer.toString('base64');
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
 
-        const response = await ai.models.generateContent({
-            model: GEMINI_MODEL,
-            contents: [
-                {
-                    text: prompt ?? 'Tolong buat ringkasan dari dokumen berikut.'
-                },
-                {
-                    inlineData: {
-                        data: base64Document,
-                        mimeType: req.file.mimetype
-                    }
-                }
-            ]
-        });
+        const docData = {
+            inlineData: {
+                data: req.file.buffer.toString('base64'),
+                mimeType: req.file.mimetype
+            }
+        };
+
+        const result = await model.generateContent([prompt ?? 'Tolong buat ringkasan dari dokumen berikut.', docData]);
+        const response = await result.response;
 
         res.status(200).json({
-            result: response.text
+            result: response.text()
         });
 
     } catch (e) {
-        console.log(e);
-
+        console.error(e);
         res.status(500).json({
             message: e.message
         });
@@ -142,30 +129,24 @@ app.post('/generate-from-audio', upload.single('audio'), async (req, res) => {
     }
 
     try {
-        const base64Audio = req.file.buffer.toString('base64');
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction });
 
-        const response = await ai.models.generateContent({
-            model: GEMINI_MODEL,
-            contents: [
-                {
-                    text: prompt ?? 'Tolong buatkan transkrip dari rekaman berikut.'
-                },
-                {
-                    inlineData: {
-                        data: base64Audio,
-                        mimeType: req.file.mimetype
-                    }
-                }
-            ]
-        });
+        const audioData = {
+            inlineData: {
+                data: req.file.buffer.toString('base64'),
+                mimeType: req.file.mimetype
+            }
+        };
+
+        const result = await model.generateContent([prompt ?? 'Tolong buatkan transkrip dari rekaman berikut.', audioData]);
+        const response = await result.response;
 
         res.status(200).json({
-            result: response.text
+            result: response.text()
         });
 
     } catch (e) {
-        console.log(e);
-
+        console.error(e);
         res.status(500).json({
             message: e.message
         });
